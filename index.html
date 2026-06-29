@@ -1,1 +1,582 @@
-<!doctype html><meta charset="utf-8"><title>Tennis dashboard</title><p>Building… the daily workflow will publish here shortly.</p>
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מנוע טניס · Tennis Engine</title>
+<style>
+  :root{
+    --bg:#0e1411; --panel:#16201a; --panel2:#1d2a22; --line:#283a30;
+    --ink:#e9f0ea; --muted:#9fb3a6; --faint:#94a99c;
+    --grass:#46c07e; --grass-2:#2f9a60; --ball:#d8e64a; --mkt:#aab9e2; --mkt-2:#8a9bd0;
+    --t-high:#46c08a; --t-mid:#f0b429; --t-low:#e5604d;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --r:14px; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,"Noto Sans Hebrew",Arial,sans-serif;
+    line-height:1.55;font-size:16px}
+  body[data-lang="he"] .l-en{display:none}
+  body[data-lang="en"] .l-he{display:none}
+  body[data-lang="en"]{direction:ltr}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 16px 64px}
+  a{color:var(--grass)}
+  .skip{position:absolute;left:-9999px}
+  .skip:focus{left:8px;top:8px;position:fixed;background:var(--grass);color:#04110a;padding:8px 14px;border-radius:8px;z-index:50;font-weight:700}
+
+  /* header */
+  header.top{position:relative;padding:6px 2px 2px}
+  .head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .kicker{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--grass);font-weight:700}
+  h1{font-family:var(--serif);font-size:1.9rem;margin:4px 0 0;font-weight:700}
+  .toggle.lang{display:flex;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px}
+  .toggle.lang button{background:none;border:none;color:var(--muted);padding:5px 12px;border-radius:999px;cursor:pointer;font-weight:700;font-size:.85rem}
+  .toggle.lang button.on{background:var(--grass);color:#04110a}
+  .toggle.lang button:focus-visible{outline:2px solid var(--ball);outline-offset:2px}
+  .sub{color:var(--muted);font-size:.95rem;margin-top:8px;max-width:64ch}
+  .sub .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:.8rem;color:var(--ball)}
+  .topbtns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .tbtn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:7px 13px;font-size:.86rem;cursor:pointer;font-weight:600}
+  .tbtn:hover{border-color:var(--grass)}
+  .tbtn:focus-visible{outline:2px solid var(--ball);outline-offset:2px}
+
+  .fresh{margin-top:14px;font-size:.8rem;color:var(--faint);font-family:var(--mono)}
+
+  /* KPI strip */
+  .strip{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:10px;margin-top:16px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px}
+  .kpi.big{background:linear-gradient(160deg,var(--panel2),var(--panel))}
+  .kpi .n{font-family:var(--serif);font-size:2rem;font-weight:700;color:var(--grass);line-height:1}
+  .kpi.big .n{font-size:2.5rem}
+  .kpi .n small{font-size:.5em;color:var(--muted)}
+  .kpi .l{font-size:.82rem;font-weight:700;margin-top:6px}
+  .kpi .b{font-size:.72rem;color:var(--muted);margin-top:2px}
+  .kpi-cap{font-size:.78rem;color:var(--muted);margin-top:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  .kpi-cap b{color:var(--ball)}
+
+  section{margin-top:26px}
+  .sec-head{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;flex-wrap:wrap}
+  .sec-head h2{font-family:var(--serif);font-size:1.2rem;margin:0;font-weight:700}
+  .sec-head .meta{font-size:.84rem;color:var(--muted)}
+
+  /* nav chips */
+  nav.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  nav.chips .lbl{font-size:.8rem;color:var(--muted);margin-inline-end:2px}
+  .chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:.88rem;cursor:pointer;color:var(--ink);font-weight:600}
+  .chip[aria-pressed="true"]{background:var(--grass);color:#04110a;border-color:var(--grass)}
+  .chip:focus-visible{outline:2px solid var(--ball);outline-offset:2px}
+  .datepick{display:inline-flex;align-items:center;gap:6px}
+  .datepick input[type=date]{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:5px 9px;font-size:.84rem;color-scheme:dark;font-family:inherit}
+  .datepick input[type=date]:focus-visible{outline:2px solid var(--ball);outline-offset:2px}
+
+  /* cube */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:15px 16px;box-shadow:var(--shadow);position:relative}
+  .card.aplus{border-color:var(--ball);box-shadow:0 0 0 1px rgba(216,230,74,.4),var(--shadow)}
+  .card.silence{opacity:.66}
+  .chead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+  .teams{font-weight:700;font-size:1.05rem}
+  .teams .pick{color:var(--grass)}
+  .when{font-size:.74rem;color:var(--muted);margin-top:2px}
+  .flags{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .flag{font-size:.66rem;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:6px;text-transform:uppercase}
+  .flag.ap{background:var(--ball);color:#1a1f06}
+  .flag.sil{background:var(--panel2);color:var(--faint);border:1px solid var(--line)}
+  .flag.today{background:var(--grass-2);color:#04110a}
+
+  .barwrap{margin:9px 0;direction:ltr}
+  .barlabel{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+  .row-label{font-size:.74rem;font-weight:800;color:var(--muted)}
+  .row-sub{font-size:.68rem;color:var(--faint);font-style:italic}
+  .bar{display:flex;height:26px;border-radius:7px;overflow:hidden;font-size:.74rem;font-weight:700}
+  .seg{display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden;white-space:nowrap;padding:0 4px}
+  .seg.pickseg{background:linear-gradient(90deg,var(--grass-2),var(--grass));color:#04110a}
+  .seg.oppseg{background:var(--panel2);color:var(--muted)}
+  .seg.pickseg.mkt{background:linear-gradient(90deg,var(--mkt-2),var(--mkt));color:#0f1115}
+  .seg.oppseg.mkt{background:var(--panel2);color:var(--muted)}
+  .axis{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:3px;direction:ltr}
+  .axis span{max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .callrow{display:flex;justify-content:space-between;align-items:center;margin:11px 0 7px;gap:8px;flex-wrap:wrap}
+  .call{font-size:.96rem}.call b{color:var(--grass)}
+  .conf-chip{font-size:.74rem;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 11px;color:var(--muted);font-weight:600}
+  .conf-chip.hi{background:var(--grass);color:#04110a;border-color:var(--grass)}
+
+  .vgap{border-radius:10px;padding:9px 12px;font-size:.84rem;margin-top:2px;border:1px solid}
+  .vgap .big{font-weight:700}
+  .vgap .cap{font-size:.74rem;color:var(--muted);margin-top:3px}
+  .vgap.green{background:rgba(70,192,138,.1);border-color:rgba(70,192,138,.4)}.vgap.green .big{color:var(--t-high)}
+  .vgap.teal{background:rgba(125,143,196,.12);border-color:rgba(125,143,196,.4)}.vgap.teal .big{color:#aab8e0}
+  .vgap.gray{background:var(--panel2);border-color:var(--line)}.vgap.gray .big{color:var(--muted)}
+
+  .note{font-size:.78rem;color:var(--muted);margin-top:9px}
+  .tail{border-top:1px dashed var(--line);margin-top:10px;padding-top:8px;font-size:.78rem;color:var(--faint)}
+
+  /* rankings */
+  .rk-panel{display:none}
+  .rk-panel.open{display:block}
+  .surf-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px}
+  .surf-head{background:var(--panel2);padding:11px 15px;font-size:.82rem;color:var(--muted);border-bottom:1px solid var(--line)}
+  table.surf{width:100%;border-collapse:collapse;font-size:.92rem}
+  table.surf th,table.surf td{padding:9px 14px;text-align:start;border-bottom:1px solid var(--line)}
+  table.surf th{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);font-weight:700}
+  table.surf td.num{font-family:var(--mono);font-weight:600;text-align:end}
+  table.surf tr:last-child td{border-bottom:none}
+  .rank{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--grass-2);color:#04110a;font-size:.74rem;align-items:center;justify-content:center;font-weight:700;margin-inline-end:8px}
+
+  /* clv + honest */
+  .clv{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+  .clv .stats{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:8px}
+  .clv .stat .n{font-family:var(--serif);font-size:1.6rem;font-weight:700;color:var(--grass)}
+  .clv .stat .k{font-size:.76rem;color:var(--muted)}
+  .empty{font-size:.9rem;color:var(--muted);background:var(--panel2);border-radius:10px;padding:12px 14px;margin-top:6px}
+  .empty strong{color:var(--ink)}
+  .honest{background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.3);border-radius:var(--r);padding:13px 16px;font-size:.86rem;color:#e6d3a0;margin-top:14px}
+  .honest b{color:var(--ball)}
+
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.66);display:none;align-items:center;justify-content:center;padding:18px;z-index:40}
+  .modal.open{display:flex}
+  .modal .box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);max-width:620px;width:100%;max-height:86vh;overflow:auto;padding:22px}
+  .modal h3{font-family:var(--serif);margin:0 0 10px}
+  .modal h4{margin:16px 0 4px;font-size:.95rem;color:var(--grass)}
+  .modal p{font-size:.88rem;color:var(--muted);margin:6px 0}
+  .modal .x{float:inline-end;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:1.1rem}
+  .gsec{margin:18px 0;padding-top:15px;border-top:1px solid var(--line)}
+  .gsec.first{border-top:none;padding-top:6px}
+  .gsec h3{font-family:var(--serif);font-size:1.05rem;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  .snum{display:inline-flex;width:25px;height:25px;border-radius:7px;background:var(--grass);color:#04110a;font-size:.82rem;font-weight:800;align-items:center;justify-content:center;flex:0 0 auto}
+  .gsec .lead{font-size:.92rem;color:var(--ink);margin:5px 0}
+  .gsec p,.gsec li{font-size:.86rem;color:var(--muted);margin:5px 0}
+  .gsec ul{margin:6px 0;padding-inline-start:20px}
+  .gsec b{color:var(--ink)}
+  .gex{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px;margin:11px 0}
+  .gex .exh{font-size:.78rem;color:var(--faint);margin-bottom:8px;font-style:italic}
+
+  footer.disc{margin-top:36px;border-top:1px solid var(--line);padding-top:16px;font-size:.82rem;color:var(--muted)}
+  footer.disc .age{display:inline-block;font-weight:800;color:var(--t-low);border:2px solid var(--t-low);border-radius:8px;padding:0 8px;margin-inline-end:8px}
+  footer.disc a{cursor:pointer}
+  .linkbtn{background:none;border:none;color:var(--grass);cursor:pointer;font:inherit;padding:0;text-decoration:underline}
+  .linkbtn:focus-visible{outline:2px solid var(--ball);outline-offset:2px}
+  .src{font-size:.74rem;color:var(--faint);margin-top:10px}
+
+  .totop{position:fixed;bottom:18px;inset-inline-end:18px;width:46px;height:46px;border-radius:50%;background:var(--grass);color:#04110a;border:none;font-size:1.4rem;font-weight:800;cursor:pointer;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
+  .totop.show{opacity:1;pointer-events:auto}
+  .totop:focus-visible{outline:2px solid var(--ball);outline-offset:2px}
+  @media(max-width:640px){.strip{grid-template-columns:1fr 1fr}h1{font-size:1.6rem}}
+</style>
+</head>
+<body data-lang="he">
+<a href="#main" class="skip"><span class="l-he">דלג לתוכן</span><span class="l-en">Skip to content</span></a>
+<div class="wrap">
+
+  <header class="top">
+    <div class="head-row">
+      <div>
+        <div class="kicker"><span class="l-he">מנוע ניבוי טניס · ELO + 9 שלבים</span><span class="l-en">Tennis Prediction Engine · ELO + 9 stages</span></div>
+        <h1><span class="l-he">מנוע טניס</span><span class="l-en">Tennis Engine</span></h1>
+      </div>
+      <div class="toggle lang" role="group" aria-label="Language">
+        <button data-set="en" aria-pressed="false"><span>EN</span></button>
+        <button data-set="he" class="on" aria-pressed="true"><span>עב</span></button>
+      </div>
+    </div>
+    <p class="sub">
+      <span class="l-he">לדבר רק על סטאפ בביטחון-גבוה, לשתוק אחרת. המנוע קורא משחק רק כששלב-הצורה גבוה <em>וגם</em> הביטחון גבוה. <span class="tag">ATP · מנוע מספר 9</span></span>
+      <span class="l-en">Speak only on high-confidence setups, stay silent otherwise. The engine calls a match only when the form stage is high <em>and</em> confidence is high. <span class="tag">ATP · Engine no. 9</span></span>
+    </p>
+    <div class="topbtns">
+      <button class="tbtn" id="guideBtn"><span class="l-he">איך לקרוא את הדף</span><span class="l-en">How to read this page</span></button>
+      <button class="tbtn" id="rkBtn" aria-expanded="false" aria-controls="rkPanel"><span class="l-he">דירוגים</span><span class="l-en">Rankings</span></button>
+      <a class="tbtn" href="#calls"><span class="l-he">קפוץ להיום</span><span class="l-en">Jump to today</span></a>
+    </div>
+  </header>
+
+  <main id="main">
+  <div class="fresh" id="fresh"></div>
+
+  <div class="strip">
+    <div class="kpi big">
+      <div class="n">63.7<small>%</small></div>
+      <div class="l"><span class="l-he">דיוק כללי</span><span class="l-en">Overall accuracy</span></div>
+      <div class="b"><span class="l-he">שחקנים מבוססים, 2000–2026</span><span class="l-en">established players, 2000–2026</span></div>
+    </div>
+    <div class="kpi">
+      <div class="n">77<small>%</small></div>
+      <div class="l"><span class="l-he">דיוק A+</span><span class="l-en">A+ accuracy</span></div>
+      <div class="b"><span class="l-he">מאומת · כיסוי ~27%</span><span class="l-en">validated · ~27% coverage</span></div>
+    </div>
+    <div class="kpi">
+      <div class="n">54</div>
+      <div class="l"><span class="l-he">CLV פתוחים</span><span class="l-en">CLV open</span></div>
+      <div class="b"><span class="l-he">נרשמו במחיר-פתיחה</span><span class="l-en">at opening price</span></div>
+    </div>
+    <div class="kpi">
+      <div class="n">0</div>
+      <div class="l"><span class="l-he">CLV נסגרו</span><span class="l-en">CLV settled</span></div>
+      <div class="b"><span class="l-he">forward-only</span><span class="l-en">forward-only</span></div>
+    </div>
+  </div>
+  <div class="kpi-cap">
+    <span class="l-he"><b>דיוק אינו edge.</b> 63.7% משקף שמועדפים-ברורים מנצחים — המנוע שווה-בערך לדירוג-ה-ATP (63.4%). ה-edge היחיד שנספר הוא CLV חיובי-ושיטתי קדימה, ולכן הוא במרכז, לא הדיוק.</span>
+    <span class="l-en"><b>Accuracy is not edge.</b> 63.7% reflects that clear favorites win — the engine is roughly level with the ATP ranking (63.4%). The only edge that counts is systematic positive forward CLV, so that's the centerpiece, not accuracy.</span>
+  </div>
+
+  <!-- rankings panel (toggled) -->
+  <div class="rk-panel" id="rkPanel">
+    <div class="sec-head" style="margin-top:22px">
+      <h2><span class="l-he">דירוגים</span><span class="l-en">Rankings</span></h2>
+      <span class="meta"><span class="l-he">דירוג-המשטח הוא הייחוד של טניס — מי חזק על המשטח של היום</span><span class="l-en">Surface rating is the tennis edge — who's strong on today's surface</span></span>
+    </div>
+    <nav class="chips" aria-label="Rating view">
+      <button class="chip rt" data-rt="overall" aria-pressed="false"><span class="l-he">כללי</span><span class="l-en">Overall</span></button>
+      <button class="chip rt" data-rt="hard" aria-pressed="false"><span class="l-he">קשיח</span><span class="l-en">Hard</span></button>
+      <button class="chip rt" data-rt="clay" aria-pressed="false"><span class="l-he">חימר</span><span class="l-en">Clay</span></button>
+      <button class="chip rt" data-rt="grass" aria-pressed="true"><span class="l-he">דשא</span><span class="l-en">Grass</span></button>
+    </nav>
+    <div class="surf-wrap">
+      <div class="surf-head" id="rtNote"></div>
+      <table class="surf">
+        <thead><tr>
+          <th><span class="l-he">שחקן</span><span class="l-en">Player</span></th>
+          <th class="num" id="rtCol"></th>
+          <th class="num"><span class="l-he">כללי</span><span class="l-en">Overall</span></th>
+        </tr></thead>
+        <tbody id="surfBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="calls">
+    <div class="sec-head">
+      <h2><span class="l-he">קריאות היום</span><span class="l-en">Today's calls</span></h2>
+      <span class="meta"><span class="l-he">וימבלדון · סבב 1 · דשא · 29 ביוני 2026 · דוגמה מהמשחקים (סך-הכול 13 A+ מתוך 54)</span><span class="l-en">Wimbledon · Round 1 · Grass · 29 Jun 2026 · sample of the slate (13 A+ of 54 total)</span></span>
+    </div>
+    <nav class="chips" aria-label="Date, tournament and round">
+      <span class="lbl"><span class="l-he">תאריך:</span><span class="l-en">Date:</span></span>
+      <button class="chip" data-group="date" aria-pressed="false">28/6</button>
+      <button class="chip" data-group="date" aria-pressed="true">29/6 <span class="l-he">(היום)</span><span class="l-en">(today)</span></button>
+      <button class="chip" data-group="date" aria-pressed="false">30/6</button>
+      <label class="datepick"><span class="lbl"><span class="l-he">חיפוש תאריך:</span><span class="l-en">Search date:</span></span>
+        <input type="date" id="datePick" value="2026-06-29" min="2026-06-28" max="2026-07-12" aria-label="Search by date / חיפוש לפי תאריך">
+      </label>
+      <span class="lbl" style="margin-inline-start:8px"><span class="l-he">טורניר:</span><span class="l-en">Tournament:</span></span>
+      <button class="chip" data-group="tour" aria-pressed="true">Wimbledon</button>
+      <button class="chip" data-group="tour" aria-pressed="false"><span class="l-he">מאלורקה</span><span class="l-en">Mallorca</span></button>
+      <span class="lbl" style="margin-inline-start:8px"><span class="l-he">סבב:</span><span class="l-en">Round:</span></span>
+      <button class="chip" data-group="round" aria-pressed="true">R1</button>
+      <button class="chip" data-group="round" aria-pressed="false">R2</button>
+    </nav>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section id="results">
+    <div class="sec-head">
+      <h2><span class="l-he">תוצאות וטראק-רקורד</span><span class="l-en">Results & track record</span></h2>
+      <span class="meta"><span class="l-he">בחר תאריך-עבר בניווט שמעל הקריאות — תוצאות יופיעו בכרטיסים</span><span class="l-en">Pick a past date in the nav above the calls — results show in the cards</span></span>
+    </div>
+    <div class="empty">
+      <span class="l-he"><strong>אין עדיין תוצאות.</strong> האיסוף-קדימה התחיל היום (29/6), ביום-1 של וימבלדון. משחקי-סבב-1 ייסגרו מהערב — וברגע שייסגרו, כל קריאה תופיע כאן עם התוצאה (ניצח/הפסיד), אם המנוע צדק, וה-CLV מול קו-הסגירה. איננו מציגים עבר שלא קרה.</span>
+      <span class="l-en"><strong>No results yet.</strong> Forward collection started today (29 Jun), Day 1 of Wimbledon. Round 1 matches settle from this evening — and once they do, each call appears here with the outcome (won/lost), whether the engine was right, and the CLV versus the closing line. We don't show a past that didn't happen.</span>
+    </div>
+  </section>
+
+  <section id="clvsec">
+    <div class="sec-head">
+      <h2><span class="l-he">מעקב CLV — הארביטר האמיתי</span><span class="l-en">CLV tracking — the real arbiter</span></h2>
+    </div>
+    <div class="clv">
+      <div class="stats">
+        <div class="stat"><div class="n" id="clvOpen">—</div><div class="k"><span class="l-he">פוזיציות פתוחות</span><span class="l-en">open positions</span></div></div>
+        <div class="stat"><div class="n" id="clvSettled">—</div><div class="k"><span class="l-he">נסגרו</span><span class="l-en">settled</span></div></div>
+        <div class="stat"><div class="n" id="clvAvg">—</div><div class="k"><span class="l-he">CLV ממוצע</span><span class="l-en">mean CLV</span></div></div>
+      </div>
+      <div class="empty">
+        <span class="l-he">היומן נפתח היום. 54 פוזיציות נרשמו במחיר-הפתיחה של Pinnacle, forward-only. עד שייסגרו מספיק — אין מספר-edge להציג, וזה בכוונה.</span>
+        <span class="l-en">The journal opened today. 54 positions were recorded at Pinnacle's opening price, forward-only. Until enough settle, there's no edge number to show — by design.</span>
+      </div>
+      <div class="honest">
+        <b class="l-he">למה ה-CLV במרכז ולא הדיוק?</b><b class="l-en">Why is CLV the centerpiece, not accuracy?</b>
+        <span class="l-he"> כי ניבוי-טוב אינו רווח. edge הוא מחיר טוב-יותר מקו-הסגירה, לאורך זמן — לא ניחוש מדויק-יותר. רק CLV חיובי-ושיטתי קדימה יוכיח שיש כאן משהו אמיתי.</span>
+        <span class="l-en"> Because a good prediction is not a profit. Edge is a better price than the closing line, over time — not a more accurate guess. Only systematic positive forward CLV will prove there's something real here.</span>
+      </div>
+    </div>
+  </section>
+
+  </main>
+
+  <footer class="disc">
+    <p><span class="age">18+</span>
+      <span class="l-he">למידע ובידור בלבד · אינו ייעוץ-הימורים · גיל 18+ · ניבוי אינו רווח. <button class="linkbtn" id="discBtn">הצהרה ופרטיות ⟶</button></span>
+      <span class="l-en">For information and entertainment only · Not betting advice · 18+ · a prediction is not a profit. <button class="linkbtn" id="discBtn2">Disclaimer & Privacy ⟶</button></span>
+    </p>
+    <p class="src">
+      <span class="l-he">נתונים: TML (stats.tennismylife.org) למשחקים ודירוגים · OddsPapi/Pinnacle לקצב · forward-only, ללא backfill · עודכן 29/6/2026.</span>
+      <span class="l-en">Data: TML (stats.tennismylife.org) for matches & ratings · OddsPapi/Pinnacle for odds · forward-only, no backfill · updated 29 Jun 2026.</span>
+    </p>
+  </footer>
+</div>
+
+<!-- guide modal -->
+<div class="modal" id="guideModal" role="dialog" aria-modal="true" aria-label="How to read">
+  <div class="box">
+    <button class="x" data-close>&times;</button>
+    <h3><span class="l-he">איך לקרוא את הדף</span><span class="l-en">How to read this page</span></h3>
+
+    <div class="gsec first">
+      <h3><span class="snum">1</span><span class="l-he">הרעיון</span><span class="l-en">The idea</span></h3>
+      <p class="lead"><span class="l-he">המנוע מדרג כל שחקן ב-Elo — דירוג כללי ודירוג נפרד לכל משטח — ומסווג את הצורה שלו לאחד מתשעה שלבים, מחזור-חיים שמקורו בניתוח-מגמות בשוקי-ההון.</span>
+        <span class="l-en">The engine rates every player with Elo — an overall rating plus a separate rating per surface — and classifies their form into one of nine stages, a life-cycle borrowed from trend analysis in financial markets.</span></p>
+      <p><span class="l-he">הוא מדבר רק על <b>A+</b>: שלב-גבוה <b>וגם</b> ביטחון-גבוה. בכל מצב אחר הוא שותק. העיקרון: לדבר רק כשהכל מסתדר, לשתוק אחרת.</span>
+        <span class="l-en">It speaks only on <b>A+</b>: a high stage <b>and</b> high confidence. In every other case it stays quiet. The principle: speak only when everything lines up, stay silent otherwise.</span></p>
+    </div>
+
+    <div class="gsec">
+      <h3><span class="snum">2</span><span class="l-he">שני הברים בכל כרטיס</span><span class="l-en">The two bars on each card</span></h3>
+      <ul>
+        <li><span class="l-he"><b>מנוע — "מה שווה":</b> ההסתברות לפי המודל.</span><span class="l-en"><b>Engine — "what it's worth":</b> the model's probability.</span></li>
+        <li><span class="l-he"><b>שוק (Pinnacle) — "מה עולה":</b> ההסתברות המגולמת במחיר, אחרי ניטרול עמלת-הבוקי (ללא-vig).</span><span class="l-en"><b>Market (Pinnacle) — "what it costs":</b> the price-implied probability after removing the bookmaker margin (no-vig).</span></li>
+      </ul>
+      <p><span class="l-he">הפער ביניהם הוא ה"ערך" האפשרי. אבל <b>גודל-הפער אינו התשובה</b> — השאלה היא אם יש לו הסבר. CLV מכריע, לא העין.</span>
+        <span class="l-en">The gap between them is the possible "value." But <b>the size of the gap is not the answer</b> — the question is whether it has an explanation. CLV decides, not the eye.</span></p>
+      <div class="gex">
+        <div class="exh"><span class="l-he">דוגמה — מועדף-כבד, השוק והמנוע מסכימים:</span><span class="l-en">Example — heavy favorite, market and engine agree:</span></div>
+        <div class="barwrap"><div class="barlabel"><span class="row-label">Engine</span><span class="row-sub"><span class="l-he">מה שווה</span><span class="l-en">what it's worth</span></span></div>
+          <div class="bar"><span class="seg pickseg" style="flex:0 0 94%">94%</span><span class="seg oppseg" style="flex:1">6%</span></div></div>
+        <div class="barwrap"><div class="barlabel"><span class="row-label">Market</span><span class="row-sub"><span class="l-he">מה עולה</span><span class="l-en">what it costs</span></span></div>
+          <div class="bar"><span class="seg pickseg mkt" style="flex:0 0 93%">93%</span><span class="seg oppseg mkt" style="flex:1">7%</span></div></div>
+        <div class="axis"><span>Sinner</span><span>Kecmanović</span></div>
+        <div class="vgap gray" style="margin-top:8px"><span class="big"><span class="l-he">בקו עם השוק · +1% · אין ערך</span><span class="l-en">In line with market · +1% · no value</span></span></div>
+      </div>
+    </div>
+
+    <div class="gsec">
+      <h3><span class="snum">3</span><span class="l-he">קריאה וביטחון</span><span class="l-en">Call & confidence</span></h3>
+      <p><span class="l-he"><b>קריאה</b> = השחקן שהמנוע מצביע עליו. <b>ביטחון</b> = כמה חד-צדדי הסיכוי. קריאת-A+ מודגשת; שתיקה מעומעמת.</span>
+        <span class="l-en"><b>Call</b> = the player the engine points to. <b>Confidence</b> = how one-sided the probability is. An A+ call is highlighted; a silence is dimmed.</span></p>
+      <p><span class="l-he">ביטחון-גבוה לבדו לא מספיק. אם השלב נמוך, המנוע שותק גם על מועדף-מוחץ — לדוגמה, ג'וקוביץ' בביטחון 97% אך שלב 3: <b>שתיקה</b>, לא A+.</span>
+        <span class="l-en">High confidence alone is not enough. If the stage is low, the engine stays silent even on a crushing favorite — e.g. Djokovic at 97% confidence but stage 3: <b>silence</b>, not A+.</span></p>
+    </div>
+
+    <div class="gsec">
+      <h3><span class="snum">4</span><span class="l-he">בלוק-הערך והצבעים</span><span class="l-en">The value block & colors</span></h3>
+      <ul>
+        <li><span class="l-he"><b>ירוק</b> — פער 3–10% לצד-הקריאה (חלון-הערך).</span><span class="l-en"><b>Green</b> — a 3–10% gap on the call side (the value window).</span></li>
+        <li><span class="l-he"><b>כחלחל</b> — פער &gt;10% (שאלה-פתוחה, חשוד מדי כדי לסמוך עליו).</span><span class="l-en"><b>Teal</b> — a gap &gt;10% (open question, too large to trust).</span></li>
+        <li><span class="l-he"><b>אפור</b> — בקו עם השוק או מועדף-כבד (אין ערך).</span><span class="l-en"><b>Gray</b> — in line with the market or a heavy favorite (no value).</span></li>
+      </ul>
+      <p><span class="l-he">הפער הוא תמיד <b>השערה-למדידה</b>, לא רווח-מובטח — CLV מכריע אם הוא אמיתי.</span>
+        <span class="l-en">The gap is always a <b>hypothesis to measure</b>, not a guaranteed profit — CLV decides whether it's real.</span></p>
+    </div>
+
+    <div class="gsec">
+      <h3><span class="snum">5</span><span class="l-he">דירוג-המשטח</span><span class="l-en">Surface ratings</span></h3>
+      <p><span class="l-he">הייחוד של טניס. כפתור "דירוגים" פותח את הדירוג לפי משטח — כללי, קשיח, חימר, דשא. שחקן יכול להיות חזק על משטח אחד וחלש על אחר, ולכן הדירוג משוקלל 60% משטח / 40% כללי.</span>
+        <span class="l-en">The tennis edge. The "Rankings" button opens the rating by surface — overall, hard, clay, grass. A player can be strong on one surface and weak on another, so the rating blends 60% surface / 40% overall.</span></p>
+    </div>
+
+    <div class="gsec">
+      <h3><span class="snum">6</span><span class="l-he">CLV — הארביטר</span><span class="l-en">CLV — the arbiter</span></h3>
+      <p><span class="l-he">דיוק-ניבוי גבוה <b>אינו edge</b> — הוא משקף שמועדפים-ברורים מנצחים. ה-edge היחיד הוא <b>מחיר טוב-יותר מקו-הסגירה</b>, לאורך זמן. אנחנו רושמים כל קריאה במחיר-הפתיחה וסוגרים מול קו-הסגירה. ניבוי אינו רווח.</span>
+        <span class="l-en">High prediction accuracy is <b>not edge</b> — it reflects that clear favorites win. The only edge is <b>a better price than the closing line</b>, over time. We record each call at the opening price and settle it against the closing line. A prediction is not a profit.</span></p>
+    </div>
+
+    <div class="gsec">
+      <h3><span class="snum">7</span><span class="l-he">forward-only</span><span class="l-en">forward-only</span></h3>
+      <p><span class="l-he">איננו ממציאים עבר. כל שורה נרשמת קדימה-בלבד, בזמן-אמת. תוצאות מופיעות רק אחרי שמשחק נסגר — עם ניצח/הפסיד, אם המנוע צדק, וה-CLV מול קו-הסגירה.</span>
+        <span class="l-en">We don't invent a past. Every row is recorded forward-only, in real time. Results appear only after a match settles — with won/lost, whether the engine was right, and the CLV against the closing line.</span></p>
+      <div class="gex">
+        <div class="exh"><span class="l-he">דוגמה — איך ייראה כרטיס אחרי שהמשחק נסגר:</span><span class="l-en">Example — how a card looks once the match settles:</span></div>
+        <div class="teams" style="font-size:.95rem"><span style="color:var(--grass)">Tommy Paul</span> <span style="color:var(--faint)">vs</span> Johannus Monday</div>
+        <div class="tail" style="border-top:none;color:var(--ink);padding-top:6px">
+          <span class="l-he">ניצח · Paul 6-3 6-4 6-2 · הקריאה צדקה · Brier 0.04 · CLV <b style="color:var(--t-high)">+2.1%</b></span>
+          <span class="l-en">Won · Paul 6-3 6-4 6-2 · call correct · Brier 0.04 · CLV <b style="color:var(--t-high)">+2.1%</b></span>
+        </div>
+        <p style="margin:6px 0 0"><span class="l-he">פול היה המקרה ה"ירוק" (מנוע 81% מול שוק 77%, פער +4%). ה-CLV החיובי אישר שתפסנו מחיר טוב-יותר מקו-הסגירה — זה ה-edge, לא עצם-הניצחון.</span><span class="l-en">Paul was the "green" case (engine 81% vs market 77%, +4% gap). The positive CLV confirmed we caught a better price than the closing line — that's the edge, not the win itself.</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- disclaimer modal -->
+<div class="modal" id="discModal" role="dialog" aria-modal="true" aria-label="Disclaimer and privacy">
+  <div class="box">
+    <button class="x" data-close>&times;</button>
+    <h3><span class="l-he">הצהרה ופרטיות</span><span class="l-en">Disclaimer & Privacy</span></h3>
+    <h4><span class="l-he">הצהרה</span><span class="l-en">Disclaimer</span></h4>
+    <p><span class="l-he">דאשבורד זה ותוכנו ניתנים <b>למטרות מידע ובידור בלבד</b>, ואינם ייעוץ פיננסי, השקעתי, משפטי או הימורים, ואף לא המלצה להמר. ההסתברויות הן <b>אומדנים, לא ודאויות</b> — אין הבטחה לתוצאה, וביצועי-עבר אינם מבטיחים עתיד. כל החלטה היא <b>באחריותך הבלעדית</b>, ואיננו אחראים להפסד או נזק. איננו מפעיל-הימורים, סַפָּר או יועץ-פיננסי, ואיננו מקבלים הימורים או כספים. השירות חינמי. נתונים נאספים ממקורות-צד-ג' ועלולים להתעכב. השימוש מגיל 18+ (או גיל-הבגירות במקומך). אתה אחראי לוודא שהשימוש חוקי בשיפוט שלך. אם הימורים פוגעים בך או במישהו שאתה מכיר — פנה לעזרה: NCPG (<a href="https://www.ncpgambling.org" target="_blank" rel="noopener">ncpgambling.org</a> · 1-800-MY-RESET) או GamCare (<a href="https://www.gamcare.org.uk" target="_blank" rel="noopener">gamcare.org.uk</a> · 0808 8020 133).</span>
+       <span class="l-en">This dashboard and its content are provided <b>for informational and entertainment purposes only</b> and are not financial, investment, legal, or betting advice, nor a recommendation to place any bet. Probabilities are <b>estimates, not certainties</b> — no outcome is guaranteed, and past performance does not guarantee future results. Any decision is <b>at your own risk</b>, and we accept no liability for loss or damage. We are not a gambling operator, bookmaker, or financial advisor, and we do not accept bets or money. The service is free. Data is gathered from third-party sources and may be delayed. Use is for 18+ (or the age of majority where you live). You are responsible for ensuring use is legal in your jurisdiction. If gambling is harming you or someone you know, seek help: NCPG (<a href="https://www.ncpgambling.org" target="_blank" rel="noopener">ncpgambling.org</a> · 1-800-MY-RESET) or GamCare (<a href="https://www.gamcare.org.uk" target="_blank" rel="noopener">gamcare.org.uk</a> · 0808 8020 133).</span></p>
+    <h4><span class="l-he">פרטיות</span><span class="l-en">Privacy</span></h4>
+    <p><span class="l-he">אתר זה הוא אתר-סטטי. הוא <b>אינו אוסף מידע-אישי</b> ואינו משתמש בקוקיז. הוא משתמש באנליטיקס פרטי (GoatCounter) שאינו מציב קוקיז ואינו אוסף מידע-מזהה. האתר מתארח ב-GitHub Pages; כמארח, GitHub עשויה לרשום נתונים-טכניים (כגון כתובת-IP) בלוגי-השרת שלה. ראה את מדיניות-הפרטיות של GitHub. ליצירת-קשר: qmanagement613@gmail.com.</span>
+       <span class="l-en">This is a static website. It <b>does not collect personal information</b> and uses no cookies. It uses privacy-friendly analytics (GoatCounter) that set no cookies and collect no personally identifying data. The site is hosted on GitHub Pages; as the host, GitHub may record technical data (such as your IP address) in its server logs. See GitHub's Privacy Statement. Contact: qmanagement613@gmail.com.</span></p>
+  </div>
+</div>
+
+<button class="totop" id="toTop" aria-label="Back to top" title="Back to top">&#8593;</button>
+
+<script>
+  const FRESH = {"updated": "2026-06-29 01:07"}; // FRESH_LINE
+  const TODAY_DATE = "20260629"; // DATE_LINE
+  const TODAY = [{"home": "Jannik Sinner", "away": "Miomir Kecmanovic", "p_home": 0.946, "pick": "Jannik Sinner", "conf": 0.946, "stage": 5, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Alexander Blockx", "away": "Alexander Zverev", "p_home": 0.16, "pick": "Alexander Zverev", "conf": 0.84, "stage": 7, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Frances Tiafoe", "away": "Terence Atmane", "p_home": 0.811, "pick": "Frances Tiafoe", "conf": 0.811, "stage": 7, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Alexandre Muller", "away": "Tommy Paul", "p_home": 0.192, "pick": "Tommy Paul", "conf": 0.808, "stage": 5, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Jiri Lehecka", "away": "Alexei Popyrin", "p_home": 0.8, "pick": "Jiri Lehecka", "conf": 0.8, "stage": 5, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Andrey Rublev", "away": "Roman Safiullin", "p_home": 0.777, "pick": "Andrey Rublev", "conf": 0.777, "stage": 7, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Brandon Nakashima", "away": "Jack Pinnington Jones", "p_home": 0.762, "pick": "Brandon Nakashima", "conf": 0.762, "stage": 7, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Mariano Navone", "away": "Flavio Cobolli", "p_home": 0.243, "pick": "Flavio Cobolli", "conf": 0.757, "stage": 8, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Raphael Collignon", "away": "Arthur Fils", "p_home": 0.276, "pick": "Arthur Fils", "conf": 0.724, "stage": 9, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Alejandro Davidovich Fokina", "away": "Juan Manuel Cerundolo", "p_home": 0.717, "pick": "Alejandro Davidovich Fokina", "conf": 0.717, "stage": 7, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Dalibor Svrcina", "away": "Learner Tien", "p_home": 0.296, "pick": "Learner Tien", "conf": 0.704, "stage": 5, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Aleksandar Kovacevic", "away": "Botic Van de Zandschulp", "p_home": 0.298, "pick": "Botic Van de Zandschulp", "conf": 0.702, "stage": 5, "aplus": true, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Yibing Wu", "away": "Novak Djokovic", "p_home": 0.027, "pick": "Novak Djokovic", "conf": 0.973, "stage": 3, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Alex de Minaur", "away": "Roman Andres Burruchaga", "p_home": 0.865, "pick": "Alex de Minaur", "conf": 0.865, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Otto Virtanen", "away": "Ben Shelton", "p_home": 0.176, "pick": "Ben Shelton", "conf": 0.824, "stage": 1, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Karen Khachanov", "away": "Billy Harris", "p_home": 0.775, "pick": "Karen Khachanov", "conf": 0.775, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Stan Wawrinka", "away": "Matteo Berrettini", "p_home": 0.238, "pick": "Matteo Berrettini", "conf": 0.762, "stage": 1, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Luca Van Assche", "away": "Marton Fucsovics", "p_home": 0.257, "pick": "Marton Fucsovics", "conf": 0.743, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Jan-Lennard Struff", "away": "Sebastian Baez", "p_home": 0.723, "pick": "Jan-Lennard Struff", "conf": 0.723, "stage": 1, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Hugo Gaston", "away": "Stefanos Tsitsipas", "p_home": 0.287, "pick": "Stefanos Tsitsipas", "conf": 0.713, "stage": 3, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Tallon Griekspoor", "away": "James Duckworth", "p_home": 0.702, "pick": "Tallon Griekspoor", "conf": 0.702, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Jaume Munar", "away": "Francisco Cerundolo", "p_home": 0.305, "pick": "Francisco Cerundolo", "conf": 0.695, "stage": 7, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Vit Kopriva", "away": "Jan Choinski", "p_home": 0.69, "pick": "Vit Kopriva", "conf": 0.69, "stage": 8, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Patrick Kypson", "away": "Mackenzie McDonald", "p_home": 0.311, "pick": "Mackenzie McDonald", "conf": 0.689, "stage": 5, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Alex Michelsen", "away": "Jacob Fearnley", "p_home": 0.688, "pick": "Alex Michelsen", "conf": 0.688, "stage": 6, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Thanasi Kokkinakis", "away": "Alexander Bublik", "p_home": 0.324, "pick": "Alexander Bublik", "conf": 0.676, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Lorenzo Sonego", "away": "Tomas Martin Etcheverry", "p_home": 0.676, "pick": "Lorenzo Sonego", "conf": 0.676, "stage": 3, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Ugo Humbert", "away": "Zizou Bergs", "p_home": 0.663, "pick": "Ugo Humbert", "conf": 0.663, "stage": 7, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Nuno Borges", "away": "Tristan Boyer", "p_home": 0.653, "pick": "Nuno Borges", "conf": 0.653, "stage": 7, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Casper Ruud", "away": "Hubert Hurkacz", "p_home": 0.356, "pick": "Hubert Hurkacz", "conf": 0.644, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Adrian Mannarino", "away": "Titouan Droguet", "p_home": 0.644, "pick": "Adrian Mannarino", "conf": 0.644, "stage": 5, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Emilio Nava", "away": "Ignacio Buse", "p_home": 0.359, "pick": "Ignacio Buse", "conf": 0.641, "stage": 8, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Kamil Majchrzak", "away": "Alejandro Tabilo", "p_home": 0.625, "pick": "Kamil Majchrzak", "conf": 0.625, "stage": 8, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Aleksandar Vukic", "away": "Jenson Brooksby", "p_home": 0.386, "pick": "Jenson Brooksby", "conf": 0.614, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Denis Shapovalov", "away": "Pablo Carreno Busta", "p_home": 0.601, "pick": "Denis Shapovalov", "conf": 0.601, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Mattia Bellucci", "away": "Zachary Svajda", "p_home": 0.599, "pick": "Mattia Bellucci", "conf": 0.599, "stage": 7, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Taylor Fritz", "away": "Jack Draper", "p_home": 0.595, "pick": "Taylor Fritz", "conf": 0.595, "stage": 5, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Sho Shimabukuro", "away": "Jaime Faria", "p_home": 0.578, "pick": "Sho Shimabukuro", "conf": 0.578, "stage": null, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Matteo Arnaldi", "away": "Quentin Halys", "p_home": 0.425, "pick": "Quentin Halys", "conf": 0.575, "stage": 9, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Adolfo Daniel Vallejo", "away": "Nicolas Mejia", "p_home": 0.574, "pick": "Adolfo Daniel Vallejo", "conf": 0.574, "stage": null, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Adam Walton", "away": "Dino Prizmic", "p_home": 0.429, "pick": "Dino Prizmic", "conf": 0.571, "stage": 8, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Roberto Bautista Agut", "away": "Joao Fonseca", "p_home": 0.566, "pick": "Roberto Bautista Agut", "conf": 0.566, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Benjamin Bonzi", "away": "Gabriel Diallo", "p_home": 0.438, "pick": "Gabriel Diallo", "conf": 0.562, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Jesper De Jong", "away": "Rinky Hijikata", "p_home": 0.439, "pick": "Rinky Hijikata", "conf": 0.561, "stage": 7, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Marin Cilic", "away": "Daniil Medvedev", "p_home": 0.443, "pick": "Daniil Medvedev", "conf": 0.557, "stage": 3, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Camilo Ugo Carabelli", "away": "Daniel Merida", "p_home": 0.447, "pick": "Daniel Merida", "conf": 0.553, "stage": null, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Soonwoo Kwon", "away": "Martin Landaluce", "p_home": 0.551, "pick": "Soonwoo Kwon", "conf": 0.551, "stage": 2, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Hamad Medjedovic", "away": "Sebastian Ofner", "p_home": 0.472, "pick": "Sebastian Ofner", "conf": 0.528, "stage": 3, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Ethan Quinn", "away": "Luciano Darderi", "p_home": 0.528, "pick": "Ethan Quinn", "conf": 0.528, "stage": 7, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Damir Dzumhur", "away": "Arthur Fery", "p_home": 0.473, "pick": "Arthur Fery", "conf": 0.527, "stage": null, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Alex Molcan", "away": "Daniel Altmaier", "p_home": 0.523, "pick": "Alex Molcan", "conf": 0.523, "stage": 7, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Yannick Hanfmann", "away": "Giovanni Mpetshi Perricard", "p_home": 0.506, "pick": "Yannick Hanfmann", "conf": 0.506, "stage": 5, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Corentin Moutet", "away": "Marcos Giron", "p_home": 0.504, "pick": "Corentin Moutet", "conf": 0.504, "stage": 4, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}, {"home": "Thiago Agustin Tirante", "away": "Fabian Marozsan", "p_home": 0.499, "pick": "Fabian Marozsan", "conf": 0.501, "stage": 1, "aplus": false, "market_gap_note": "פער-לרגע מול Pinnacle, טרם-מאומת — לא edge"}]; // TODAY_LINE
+  const ACCURACY = {"overall": 63.7, "base": 63.4, "aplus": 77.3, "stage": 77.4, "matches": 61182}; // ACCURACY_LINE
+  const RANKINGS = [{"id": "S0AG", "name": "Jannik Sinner", "elo": 2315.8, "matches": 430, "surface": {"Hard": 2276.0, "Clay": 2110.7, "Grass": 1996.4}}, {"id": "A0E2", "name": "Carlos Alcaraz", "elo": 2250.6, "matches": 354, "surface": {"Hard": 2130.3, "Clay": 2170.5, "Grass": 2080.6}}, {"id": "D643", "name": "Novak Djokovic", "elo": 2174.3, "matches": 1398, "surface": {"Hard": 2162.7, "Clay": 2083.6, "Grass": 2141.3, "Carpet": 1629.6}}, {"id": "Z355", "name": "Alexander Zverev", "elo": 2087.8, "matches": 776, "surface": {"Hard": 2035.9, "Clay": 2030.0, "Grass": 1765.1}}, {"id": "F0F1", "name": "Arthur Fils", "elo": 1991.8, "matches": 170, "surface": {"Hard": 1885.2, "Clay": 1912.6, "Grass": 1645.6}}, {"id": "D0CO", "name": "Jack Draper", "elo": 1974.2, "matches": 181, "surface": {"Hard": 1967.7, "Clay": 1789.4, "Grass": 1727.7}}, {"id": "RH16", "name": "Casper Ruud", "elo": 1952.5, "matches": 479, "surface": {"Hard": 1817.9, "Clay": 1959.0, "Grass": 1489.4}}, {"id": "PL56", "name": "Tommy Paul", "elo": 1951.2, "matches": 381, "surface": {"Hard": 1882.9, "Clay": 1863.7, "Grass": 1754.9}}, {"id": "MM58", "name": "Daniil Medvedev", "elo": 1949.4, "matches": 626, "surface": {"Hard": 1973.9, "Clay": 1800.8, "Grass": 1797.7}}, {"id": "J0DZ", "name": "Rafael Jodar", "elo": 1944.5, "matches": 37, "surface": {"Hard": 1606.0, "Clay": 1889.1}}, {"id": "DH58", "name": "Alex de Minaur", "elo": 1940.7, "matches": 505, "surface": {"Hard": 1934.2, "Clay": 1795.1, "Grass": 1785.9}}, {"id": "M0EJ", "name": "Lorenzo Musetti", "elo": 1940.5, "matches": 315, "surface": {"Hard": 1821.9, "Clay": 1946.0, "Grass": 1742.5}}, {"id": "FB98", "name": "Taylor Fritz", "elo": 1935.5, "matches": 565, "surface": {"Hard": 1881.6, "Clay": 1720.4, "Grass": 1864.5}}, {"id": "M0NI", "name": "Jakub Mensik", "elo": 1934.0, "matches": 126, "surface": {"Hard": 1905.4, "Clay": 1848.8, "Grass": 1545.0}}, {"id": "S0S1", "name": "Ben Shelton", "elo": 1929.7, "matches": 214, "surface": {"Hard": 1927.6, "Clay": 1706.8, "Grass": 1760.9}}, {"id": "C0AU", "name": "Francisco Cerundolo", "elo": 1898.1, "matches": 287, "surface": {"Hard": 1866.2, "Clay": 1805.6, "Grass": 1606.4}}, {"id": "KE17", "name": "Nick Kyrgios", "elo": 1896.7, "matches": 328, "surface": {"Hard": 1855.9, "Clay": 1727.5, "Grass": 1770.8}}, {"id": "F0FV", "name": "Joao Fonseca", "elo": 1892.6, "matches": 81, "surface": {"Hard": 1861.7, "Clay": 1811.3, "Grass": 1518.8}}, {"id": "AG37", "name": "Felix Auger-Aliassime", "elo": 1892.1, "matches": 461, "surface": {"Hard": 1868.1, "Clay": 1782.2, "Grass": 1647.1}}, {"id": "R0DG", "name": "Holger Rune", "elo": 1890.7, "matches": 268, "surface": {"Hard": 1882.7, "Clay": 1846.3, "Grass": 1669.1}}, {"id": "TD51", "name": "Frances Tiafoe", "elo": 1886.0, "matches": 483, "surface": {"Hard": 1827.1, "Clay": 1735.5, "Grass": 1730.1}}, {"id": "C0E9", "name": "Flavio Cobolli", "elo": 1881.3, "matches": 169, "surface": {"Hard": 1715.5, "Clay": 1866.8, "Grass": 1677.2}}, {"id": "RE44", "name": "Andrey Rublev", "elo": 1879.2, "matches": 600, "surface": {"Hard": 1827.2, "Clay": 1836.8, "Grass": 1731.2}}, {"id": "VA25", "name": "Valentin Vacherot", "elo": 1878.4, "matches": 47, "surface": {"Hard": 1797.6, "Clay": 1686.7}}, {"id": "T0HA", "name": "Learner Tien", "elo": 1877.7, "matches": 89, "surface": {"Hard": 1862.9, "Clay": 1708.0, "Grass": 1539.2}}]; // RANKINGS_LINE
+  const CLV = {"n_journal": 54, "clv_n": 0, "avg_pts": null, "positive": 0, "decided": 0, "correct": 0}; // CLV_LINE
+  const STAGE_HE={1:"ניצוץ ראשון",2:"עצירה",3:"התכנסות",4:"ירידה",5:"בסיס-רחב",6:"פריצה ראשונה",7:"הכנה אחרונה",8:"פריצה",9:"התחזקות"};
+  const STAGE_EN={1:"first spark",2:"stalling",3:"consolidating",4:"decline",5:"broad base",6:"first breakout",7:"final prep",8:"breakout",9:"strengthening"};
+  const RT_HE={overall:"כללי",hard:"קשיח",clay:"חימר",grass:"דשא"};
+  const RT_EN={overall:"Overall",hard:"Hard",clay:"Clay",grass:"Grass"};
+  const HIGH=new Set([5,7,8,9]);
+  let curRT="grass";
+
+  const lang=()=>document.body.getAttribute("data-lang");
+  const L=(he,en)=>lang()==="he"?he:en;
+
+  function renderCards(){
+    const el=document.getElementById("cards"); el.innerHTML="";
+    if(!TODAY.length){
+      el.innerHTML=`<div class="empty"><span class="l-he">אין משחקים להיום, או שהיום טרם נבנה. הדף יתעדכן בריצת ה---live הבאה.</span><span class="l-en">No matches today, or today's slate isn't built yet. The page updates on the next --live run.</span></div>`;
+      return;
+    }
+    for(const m of TODAY){
+      const conf = (m.conf!=null) ? m.conf : Math.max(m.p_home, 1-m.p_home);
+      const opp = (m.pick===m.home) ? m.away : m.home;
+      const engPick = Math.round(conf*100), engOpp = 100-engPick;
+      const hasStage = (m.stage!=null);
+      const hi = hasStage && HIGH.has(m.stage);
+      const stageName = hasStage ? L(STAGE_HE[m.stage],STAGE_EN[m.stage]) : "—";
+      const note = m.aplus
+        ? L("שלב גבוה ("+m.stage+") × ביטחון "+(conf*100).toFixed(0)+"% → מועדף-ברור.","High stage ("+m.stage+") × "+(conf*100).toFixed(0)+"% → clear favorite.")
+        : (hi? L("ביטחון "+(conf*100).toFixed(0)+"% אך מתחת לסף-הקריאה.","Confidence "+(conf*100).toFixed(0)+"% but below the call threshold.")
+             : L("ביטחון "+(conf*100).toFixed(0)+"% — "+(hasStage?"אבל שלב "+m.stage+" (לא-גבוה) → שתיקה. ":"")+"ביטחון לבדו לא מספיק.","Confidence "+(conf*100).toFixed(0)+"% — "+(hasStage?"but stage "+m.stage+" (not high) → silence. ":"")+"confidence alone isn't enough."));
+      const c=document.createElement("article");
+      c.className="card "+(m.aplus?"aplus":"silence");
+      c.setAttribute("aria-label",(m.aplus?"A+ call: ":"Silence: ")+m.pick+" vs "+opp);
+      c.innerHTML=`
+        <div class="chead">
+          <div>
+            <div class="teams"><span class="pick">${m.pick}</span> <span style="color:var(--faint)">${L("מול","vs")}</span> ${opp}</div>
+            <div class="when">${L("וימבלדון · סבב 1 · דשא","Wimbledon · R1 · Grass")}</div>
+          </div>
+          <div class="flags">
+            <span class="flag today">${L("היום","today")}</span>
+            <span class="flag ${m.aplus?'ap':'sil'}">${m.aplus?'A+':L('שתיקה','silent')}</span>
+          </div>
+        </div>
+        <div class="barwrap">
+          <div class="barlabel"><span class="row-label">${L("מנוע","Engine")}</span><span class="row-sub">${L("מה שווה","what it's worth")}</span></div>
+          <div class="bar"><span class="seg pickseg" style="flex:0 0 ${engPick}%">${engPick>=14?engPick+'%':''}</span><span class="seg oppseg" style="flex:1">${engOpp>=14?engOpp+'%':''}</span></div>
+        </div>
+        <div class="axis"><span>${m.pick}</span><span>${opp}</span></div>
+        <div class="callrow">
+          <span class="call">${L("קריאה","Call")}: <b>${m.aplus?m.pick:L("— שתיקה","— silence")}</b>${m.aplus?(" · "+engPick+"%"):""}</span>
+          <span class="conf-chip ${hi?'hi':''}">${L("שלב","Stage")} ${hasStage?m.stage:"—"} · ${stageName}</span>
+        </div>
+        <div class="note">${note}</div>
+        <div class="tail">${L("טרם שוחק · הקריאה והתוצאה ייבדקו · השוואה לשוק תופיע במעקב-ה-CLV","Not played yet · the call and result will be checked · market comparison appears in CLV tracking")}</div>`;
+      el.appendChild(c);
+    }
+  }
+  function renderRatings(){
+    const key=curRT, lab=L(RT_HE[key],RT_EN[key]);
+    document.getElementById("rtCol").textContent=L(lab+" Elo","Elo "+lab);
+    document.getElementById("rtNote").textContent = key==="grass"
+      ? L("דשא — המשטח של היום (וימבלדון). Elo פר-משטח, blended 60% משטח / 40% כללי.","Grass — today's surface (Wimbledon). Per-surface Elo, blended 60% surface / 40% overall.")
+      : L("Elo על "+lab+". blended 60% משטח / 40% כללי.",lab+" Elo. Blended 60% surface / 40% overall.");
+    const CAP={hard:"Hard",clay:"Clay",grass:"Grass"};
+    const val=(p,k)=> k==="overall" ? p.elo : ((p.surface&&p.surface[CAP[k]]!=null)?p.surface[CAP[k]]:p.elo);
+    const sorted=[...RANKINGS].sort((a,b)=>val(b,key)-val(a,key));
+    const el=document.getElementById("surfBody"); el.innerHTML="";
+    sorted.forEach((p,i)=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td><span class="rank">${i+1}</span>${p.name}</td><td class="num">${Math.round(val(p,key))}</td><td class="num" style="color:var(--faint)">${Math.round(p.elo)}</td>`;
+      el.appendChild(tr);
+    });
+  }
+  function renderCLV(){
+    const open = (CLV.n_journal!=null && CLV.decided!=null) ? (CLV.n_journal - CLV.decided) : (CLV.n_journal||0);
+    const setEl=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+    setEl("clvOpen", open);
+    setEl("clvSettled", CLV.decided||0);
+    setEl("clvAvg", (CLV.avg_pts!=null) ? ((CLV.avg_pts>=0?"+":"")+(CLV.avg_pts).toFixed(1)+"%") : "—");
+  }
+  function renderAll(){renderCards();renderRatings();renderCLV();
+    const date = TODAY_DATE || (FRESH&&FRESH.updated) || "—";
+    document.getElementById("fresh").textContent=L("עודכן: "+date+" · נבנה מ-today.json + clv_journal","Updated: "+date+" · built from today.json + clv_journal");
+    const dp=document.getElementById("datePick"); if(dp) dp.setAttribute("aria-label",L("חיפוש לפי תאריך","Search by date"));}
+
+  // language
+  document.querySelectorAll(".toggle.lang button").forEach(b=>{
+    b.addEventListener("click",()=>{
+      const set=b.getAttribute("data-set");
+      document.body.setAttribute("data-lang",set);
+      document.documentElement.setAttribute("lang",set);
+      document.documentElement.setAttribute("dir",set==="he"?"rtl":"ltr");
+      document.querySelectorAll(".toggle.lang button").forEach(x=>{const a=x.getAttribute("data-set")===set;x.classList.toggle("on",a);x.setAttribute("aria-pressed",a?"true":"false");});
+      renderAll();
+    });
+  });
+  // chips (exclusive within group)
+  document.querySelectorAll(".chip[data-group]").forEach(ch=>{
+    ch.addEventListener("click",()=>{const g=ch.getAttribute("data-group");
+      document.querySelectorAll('.chip[data-group="'+g+'"]').forEach(s=>s.setAttribute("aria-pressed",s===ch?"true":"false"));});
+  });
+  // rating toggle
+  document.querySelectorAll(".chip.rt").forEach(ch=>{
+    ch.addEventListener("click",()=>{curRT=ch.getAttribute("data-rt");
+      document.querySelectorAll(".chip.rt").forEach(s=>s.setAttribute("aria-pressed",s===ch?"true":"false"));renderRatings();});
+  });
+  // rankings panel toggle (with aria-expanded)
+  const rkBtn=document.getElementById("rkBtn"), rkPanel=document.getElementById("rkPanel");
+  rkBtn.addEventListener("click",()=>{const open=rkPanel.classList.toggle("open");rkBtn.setAttribute("aria-expanded",open?"true":"false");});
+
+  // modals — focus management, inert background, focus trap
+  let lastFocused=null;
+  const WRAP=document.querySelector(".wrap");
+  function trap(m,e){
+    if(e.key!=="Tab")return;
+    const f=[...m.querySelectorAll('button,a[href],input,[tabindex]:not([tabindex="-1"])')].filter(x=>x.offsetParent!==null);
+    if(!f.length)return;
+    const first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+  function openModal(id,trigger){
+    lastFocused=trigger||document.activeElement;
+    const m=document.getElementById(id);
+    m.classList.add("open"); WRAP.setAttribute("inert","");
+    const x=m.querySelector(".x"); if(x) x.focus();
+    m.onkeydown=e=>trap(m,e);
+  }
+  function closeModal(m){
+    m.classList.remove("open"); WRAP.removeAttribute("inert"); m.onkeydown=null;
+    if(lastFocused){lastFocused.focus();lastFocused=null;}
+  }
+  document.getElementById("guideBtn").addEventListener("click",e=>openModal("guideModal",e.currentTarget));
+  document.getElementById("discBtn").addEventListener("click",e=>openModal("discModal",e.currentTarget));
+  document.getElementById("discBtn2").addEventListener("click",e=>openModal("discModal",e.currentTarget));
+  document.querySelectorAll("[data-close]").forEach(x=>x.addEventListener("click",()=>closeModal(x.closest(".modal"))));
+  document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal(m);}));
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal.open").forEach(m=>closeModal(m));});
+
+  // date picker: picking a date clears the relative chips (real builder will filter the list)
+  const datePick=document.getElementById("datePick");
+  if(datePick) datePick.addEventListener("change",()=>{
+    document.querySelectorAll('.chip[data-group="date"]').forEach(s=>s.setAttribute("aria-pressed","false"));
+  });
+
+  // back-to-top (named goTop to avoid the scrollTop DOM-property collision)
+  const toTop=document.getElementById("toTop");
+  function goTop(){const rm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({top:0,behavior:rm?"auto":"smooth"});}
+  window.addEventListener("scroll",()=>toTop.classList.toggle("show",window.scrollY>400));
+  toTop.addEventListener("click",goTop);
+
+  renderAll();
+</script>
+<!-- GoatCounter — no cookies, no PII (matches baseball/worldcup) -->
+<script data-goatcounter="https://tennis613.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
