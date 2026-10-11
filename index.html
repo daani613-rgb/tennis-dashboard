@@ -257,6 +257,7 @@
         <div class="stat"><div class="n" id="clvSettled">—</div><div class="k"><span class="l-he">נסגרו</span><span class="l-en">settled</span></div></div>
         <div class="stat"><div class="n" id="clvAvg">—</div><div class="k"><span class="l-he">CLV ממוצע</span><span class="l-en">mean CLV</span></div></div>
       </div>
+      <p id="clvNoStart" style="display:none;font-size:.82rem;color:var(--faint);margin:6px 0 0"><span class="l-he">מתוך <b id="clvNsNHe"></b> המשחקים ב-CLV, <b id="clvNsMHe"></b> נרשמו ביומן בלי שעת פתיחה, ולכן אי אפשר לאשר שנכתבו לפני תחילת המשחק.</span><span class="l-en">Of the <b id="clvNsNEn"></b> matches in the CLV figure, <b id="clvNsMEn"></b> were logged without a start time, so they cannot be confirmed as written before the match started.</span></p>
       <div class="honest">
         <b class="l-he">למה ה-CLV במרכז ולא הדיוק?</b><b class="l-en">Why is CLV the centerpiece, not accuracy?</b>
         <span class="l-he"> כי ניבוי-טוב אינו רווח. edge הוא מחיר טוב-יותר מקו-הסגירה, לאורך זמן — לא ניחוש מדויק-יותר. רק CLV חיובי-ושיטתי קדימה יוכיח שיש כאן משהו אמיתי.</span>
@@ -550,6 +551,10 @@
     setEl("clvOpen", open);
     setEl("clvSettled", CLV.decided||0);
     setEl("clvAvg", (CLV.avg_pts!=null) ? ((CLV.avg_pts>=0?"+":"")+(CLV.avg_pts).toFixed(1)+"%") : "—");
+    if (CLV.no_start) {   // rows logged without a start time cannot be confirmed as pre-start
+      ["clvNsNHe","clvNsNEn"].forEach(id=>setEl(id, CLV.clv_n)); ["clvNsMHe","clvNsMEn"].forEach(id=>setEl(id, CLV.no_start));
+      const e=document.getElementById("clvNoStart"); if(e) e.style.display="";
+    }
   }
   // ── דירוגי-ציון (ממוצע-גאומטרי-משוקלל · נרמול-טווח-קבוע · רצפה-10) ──
   const PMAP={}; RANKINGS_FULL.forEach(p=>PMAP[p.name]=p);
